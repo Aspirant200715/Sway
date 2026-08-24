@@ -1,0 +1,12 @@
+Full stack social media platform
+
+
+what are the requirementts 
+Authenticationn and authrorization 
+Dashboard -> post content Reels 
+Profile Section -> Posted , following , followers , upadted , bio
+Chats , stories , likes and comments , seatings , highlights and live broadcast
+
+#1 User properties 
+Name , Email , Phone Number , Password , Username 
+AS we proceed inside -> followers, following , account_type , Profile_Image , Content_type (post stories reels)
