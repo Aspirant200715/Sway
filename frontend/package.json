@@ -1,0 +1,10 @@
+{
+  "name": "social-media-frontend",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix Twitter_clone run dev --",
+    "build": "npm --prefix Twitter_clone run build",
+    "lint": "npm --prefix Twitter_clone run lint",
+    "preview": "npm --prefix Twitter_clone run preview"
+  }
+}

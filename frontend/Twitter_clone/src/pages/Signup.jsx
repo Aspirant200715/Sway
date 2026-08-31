@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Mark } from "./Login";
+import axiosInstance from "../../../axiosCalls/axios";
 
 const initialForm = {
   name: "",
@@ -15,18 +16,35 @@ function Signup({ onNavigate }) {
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [err,setErr] = useState("")
+  const [loading,setLoading] = useState(false)
 
+
+  // same as handle change 
   const updateField = (event) =>
-    setForm({ ...form, [event.target.name]: event.target.value });
+    setForm((prev) => ({...prev, [event.target.name]: event.target.value }));   
+
   const requiredReady =
     form.name.trim() &&
     form.username.trim() &&
     form.email.includes("@") &&
     form.password.length > 6;
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    setSubmitted(true);
+
+  //Clicking on the signup 
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setErr('')
+    setLoading(true)
+    try{
+      await axiosInstance.post('/users/register',form)
+      console.log("User registered")
+    }catch(error){
+     console.log(error)
+    }
+    // console.log("Form submitted")
   };
+
+  
 
   return (
     <div className="w-full max-w-[580px] animate-rise">
@@ -50,7 +68,7 @@ function Signup({ onNavigate }) {
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
             label="Full name"
-            name="name"
+            name="name"      //key and value each data has a name property set 
             placeholder="Avery Morgan"
             value={form.name}
             onChange={updateField}
@@ -63,7 +81,7 @@ function Signup({ onNavigate }) {
             name="username"
             placeholder="averymorgan"
             value={form.username}
-            onChange={updateField}
+            onChange={updateField}     //handlechange field 
             error={
               submitted && !form.username.trim() ? "Choose a username." : ""
             }
@@ -163,7 +181,7 @@ function Signup({ onNavigate }) {
           />
           I agree to keep this space kind, curious, and useful.
         </label>
-        <button type="submit" className="primary-button w-full">
+        <button type="submit" className="primary-button w-full" onChange={handleSubmit}>
           Create account <span aria-hidden="true">&#8594;</span>
         </button>
         {submitted && requiredReady && (
