@@ -44,7 +44,9 @@ export const registerUser = async (req, res) => {
     const token = gentoken(newUser._id);
     console.log(token);
     res.cookie("token", token, cokkieOptions);
-    res.status(201).json(newUser);
+    const userData = newUser.toObject();
+    delete userData.password;
+    res.status(201).json(userData);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Unable to register user" });
@@ -74,9 +76,12 @@ export const LoginUser = async (req, res) => {
     console.log(token);
     res.cookie("token", token, cokkieOptions);
 
+    const userData = userexists.toObject();
+    delete userData.password;
+
     res.status(200).json({
       message: "Login Successful",
-      User: userexists,
+      User: userData,
     });
   } catch (error) {
     console.log(error);
@@ -85,9 +90,10 @@ export const LoginUser = async (req, res) => {
 };
 
 export const getUser = (req, res) => {
-  console.log(req.user);
+  const userData = req.user.toObject();
+  delete userData.password;
+  res.send(userData);
 };
-
 
 export const logoutUser = (req, res) => {
   res.clearCookie("token");

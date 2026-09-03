@@ -1,17 +1,45 @@
 import { useState } from "react";
+import axiosInstance from "../axiosCalls/axios";
+import useAuth from "../context/useAuth";
 
 function Login({ onNavigate }) {
+  const { setUser } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const updateField = (event) => {
     setForm({ ...form, [event.target.name]: event.target.value });
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErr("");
+    setLoginSuccess(false);
     setSubmitted(true);
+
+    if (!isReady) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post("/users/login", form);
+      setUser(response.data.User);
+      console.log("User Logged in");
+      setLoginSuccess(true);
+      onNavigate("home");
+    } catch (error) {
+      setErr(
+        error.response?.data?.message ||
+          "Unable to log in. Check that the backend is running and try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const emailIsValid = form.email.includes("@") && form.email.includes(".");
@@ -87,12 +115,27 @@ function Login({ onNavigate }) {
             </p>
           )}
         </div>
-        <button type="submit" className="primary-button mt-2 w-full">
-          Log in <span aria-hidden="true">&#8594;</span>
+        <button
+          type="submit"
+          disabled={loading}
+          className="primary-button mt-2 w-full disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? (
+            "Logging in..."
+          ) : (
+            <>
+              Log in <span aria-hidden="true">&#8594;</span>
+            </>
+          )}
         </button>
-        {submitted && isReady && (
+        {err && (
+          <p className="rounded-xl bg-[#fff0eb] px-4 py-3 text-center text-sm font-medium text-[#b84e3b]">
+            {err}
+          </p>
+        )}
+        {loginSuccess && (
           <p className="rounded-xl bg-[#eaf5e9] px-4 py-3 text-center text-sm font-medium text-[#397245]">
-            Looks good. This demo is ready for your backend connection.
+            Login successful.
           </p>
         )}
       </form>

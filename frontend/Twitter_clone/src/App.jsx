@@ -8,7 +8,11 @@ import {
 import Login, { Mark } from "./pages/Login";
 import Signup from "./pages/Signup";
 import Logout from "./pages/Logout";
+import Home from "./pages/Home";
 import "./App.css";
+import PublicRoute from "./components/publicRoute";
+import ProtectedRoute from "./components/protectedRoute";
+import { AuthProvider } from "./context/AuthContext.jsx";
 
 function App() {
   const navigate = useNavigate();
@@ -25,7 +29,7 @@ function App() {
               s
             </div>
             <span className="font-display text-2xl font-semibold tracking-[-0.05em]">
-              sway
+              Sway
             </span>
           </div>
         </div>
@@ -56,22 +60,54 @@ function App() {
             <Mark />
           </div>
           <nav className="ml-auto flex items-center gap-1 rounded-2xl bg-[#e9eee7] p-1 text-xs font-bold text-[#66716a] sm:gap-2 sm:text-sm">
+            <NavButton to="/home">Home</NavButton>
             <NavButton to="/login">Log in</NavButton>
             <NavButton to="/signup">Sign up</NavButton>
             <NavButton to="/logout">Log out</NavButton>
           </nav>
         </header>
         <div className="flex flex-1 items-start justify-center lg:items-center lg:pb-14">
-          <Routes>
-            <Route path="/login" element={<Login onNavigate={goTo} />} />
-            <Route path="/signup" element={<Signup onNavigate={goTo} />} />
-            <Route path="/logout" element={<Logout onNavigate={goTo} />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
+          <AuthProvider>
+            <Routes>
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login onNavigate={goTo} />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <PublicRoute>
+                    <Signup onNavigate={goTo} />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/logout"
+                element={
+                  <ProtectedRoute>
+                    <Logout onNavigate={goTo} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/home"
+                element={
+                  <ProtectedRoute>
+                    <Home onNavigate={goTo} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </AuthProvider>
         </div>
         <footer className="mt-12 flex justify-between text-[11px] font-medium uppercase tracking-[0.16em] text-[#9aa69d]">
-          <span>sway / 2026</span>
-          <span>Built for better conversations</span>
+          <span>Sway / 2026</span>
+          <span>Built for better conversations and connections</span>
         </footer>
       </section>
     </main>

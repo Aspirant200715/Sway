@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Mark } from "./Login";
-import axiosInstance from "../../../axiosCalls/axios";
+import axiosInstance from "../axiosCalls/axios";
 
 const initialForm = {
   name: "",
@@ -16,13 +16,12 @@ function Signup({ onNavigate }) {
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [err,setErr] = useState("")
-  const [loading,setLoading] = useState(false)
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
 
-
-  // same as handle change 
+  // same as handle change
   const updateField = (event) =>
-    setForm((prev) => ({...prev, [event.target.name]: event.target.value }));   
+    setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
 
   const requiredReady =
     form.name.trim() &&
@@ -30,21 +29,25 @@ function Signup({ onNavigate }) {
     form.email.includes("@") &&
     form.password.length > 6;
 
-  //Clicking on the signup 
+  //Clicking on the signup
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setErr('')
-    setLoading(true)
-    try{
-      await axiosInstance.post('/users/register',form)
-      console.log("User registered")
-    }catch(error){
-     console.log(error)
+    e.preventDefault();
+    setErr("");
+    setLoading(true);
+    try {
+      await axiosInstance.post("/users/register", form);
+      console.log("User registered");
+      setSubmitted(true);
+    } catch (error) {
+      setErr(
+        error.response?.data?.message ||
+          "Unable to create your account. Check that the backend is running and try again.",
+      );
+    } finally {
+      setLoading(false);
     }
     // console.log("Form submitted")
   };
-
-  
 
   return (
     <div className="w-full max-w-[580px] animate-rise">
@@ -68,7 +71,7 @@ function Signup({ onNavigate }) {
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
             label="Full name"
-            name="name"      //key and value each data has a name property set 
+            name="name" //key and value each data has a name property set
             placeholder="Avery Morgan"
             value={form.name}
             onChange={updateField}
@@ -81,7 +84,7 @@ function Signup({ onNavigate }) {
             name="username"
             placeholder="averymorgan"
             value={form.username}
-            onChange={updateField}     //handlechange field 
+            onChange={updateField} //handlechange field
             error={
               submitted && !form.username.trim() ? "Choose a username." : ""
             }
@@ -181,9 +184,24 @@ function Signup({ onNavigate }) {
           />
           I agree to keep this space kind, curious, and useful.
         </label>
-        <button type="submit" className="primary-button w-full" onChange={handleSubmit}>
-          Create account <span aria-hidden="true">&#8594;</span>
+        <button
+          type="submit"
+          disabled={loading}
+          className="primary-button w-full disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? (
+            "Creating account..."
+          ) : (
+            <>
+              Create account <span aria-hidden="true">&#8594;</span>
+            </>
+          )}
         </button>
+        {err && (
+          <p className="rounded-xl bg-[#fff0eb] px-4 py-3 text-center text-sm font-medium text-[#b84e3b]">
+            {err}
+          </p>
+        )}
         {submitted && requiredReady && (
           <p className="rounded-xl bg-[#eaf5e9] px-4 py-3 text-center text-sm font-medium text-[#397245]">
             Your profile is ready to connect when you are.

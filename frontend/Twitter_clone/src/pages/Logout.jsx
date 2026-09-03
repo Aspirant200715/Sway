@@ -1,8 +1,28 @@
 import { useState } from "react";
 import { Mark } from "./Login";
+import axiosInstance from "../axiosCalls/axios";
+import useAuth from "../context/useAuth";
 
 function Logout({ onNavigate }) {
+  const { setUser } = useAuth();
   const [loggedOut, setLoggedOut] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogout = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      await axiosInstance.post("/users/logout");
+      setUser(null);
+      setLoggedOut(true);
+    } catch {
+      setError("Unable to log out. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loggedOut) {
     return (
@@ -55,10 +75,12 @@ function Logout({ onNavigate }) {
       <div className="mt-8 flex flex-col gap-3 sm:flex-row-reverse">
         <button
           type="button"
-          onClick={() => setLoggedOut(true)}
+          onClick={handleLogout}
+          disabled={loading}
           className="primary-button flex-1"
         >
-          Log out <span aria-hidden="true">&#8594;</span>
+          {loading ? "Logging out..." : "Log out"}{" "}
+          <span aria-hidden="true">&#8594;</span>
         </button>
         <button
           type="button"
@@ -68,8 +90,9 @@ function Logout({ onNavigate }) {
           Stay a little longer
         </button>
       </div>
+      {error && <p className="mt-4 text-sm text-[#d85b46]">{error}</p>}
       <p className="mt-6 text-xs text-[#9aa69d]">
-        This is a frontend-only preview. No session or cookie is changed.
+        Your session will be cleared on this device.
       </p>
     </div>
   );
