@@ -2,9 +2,9 @@
   "name": "social-media-frontend",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix Twitter_clone run dev --",
-    "build": "npm --prefix Twitter_clone run build",
-    "lint": "npm --prefix Twitter_clone run lint",
-    "preview": "npm --prefix Twitter_clone run preview"
+    "dev": "npm --prefix Sway run dev --",
+    "build": "npm --prefix Sway run build",
+    "lint": "npm --prefix Sway run lint",
+    "preview": "npm --prefix Sway run preview"
   }
 }
