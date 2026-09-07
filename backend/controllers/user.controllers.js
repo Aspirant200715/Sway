@@ -103,3 +103,61 @@ export const logoutUser = (req, res) => {
     message: "Logged Out Successfully",
   });
 };
+
+export const getUserProfile = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const userData = await User.findOne({ username }).select("-password");
+    if (!userData) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res
+      .status(200)
+      .json({ message: "User Details found", data: userData });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const followUser = async (req, res) => {
+  try {
+    //id same as logged in user
+    //the user cannot follow themselves
+    //if you already follow -> unfollow
+    //if not following then unfollow
+    const currentUserid = req.user._id;
+    const targetUserid = req.params.id;
+    if (currentUserid.toString() === targetUserid.toString()) {
+      return res.status(400).json({ message: "You cannot follow yourself" });
+    }
+
+    const currentUser = await User.findById({ currentUserid });
+    const targetUser = await User.findById({ targetUserid });
+
+    if (!currentUser || !targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const alreadyFollowing = targetUser.followers.some((id)=>
+    id.toString()===currentUserid.toString());
+
+    if(alreadyFollowing){
+      return res.status(409).json({message:"You are already following user"})
+    }
+
+    await User.findByIdAndUpdate(currentUserid,{
+      $addToSet : {followings : targetUserid}
+    })
+
+    await User.findByIdAndUpdate(targetUserid,{
+      $addToSet : {followers : currentUserid}
+    })
+
+
+    res.status(201).json({message:"User Followed"})
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

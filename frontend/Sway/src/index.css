@@ -14,3 +14,11 @@ body { margin: 0; min-width: 320px; }
 .secondary-button:hover { border-color: #bdcbbd; background: #eef3ed; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .animate-rise { animation: rise 420ms ease-out both; }
+.profile-hero { min-height: 0; }
+.profile-identity { display: flex; align-items: center; gap: 1.5rem; }
+.profile-avatar { width: 9rem; height: 9rem; flex: 0 0 auto; }
+.profile-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 767px) {
+	.profile-identity { align-items: flex-start; gap: 1rem; }
+	.profile-avatar { width: 7rem; height: 7rem; }
+}

@@ -13,6 +13,7 @@ import "./App.css";
 import PublicRoute from "./components/publicRoute";
 import ProtectedRoute from "./components/protectedRoute";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import Profile from "./pages/Profile.jsx";
 
 function App() {
   const navigate = useNavigate();
@@ -98,6 +99,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Home onNavigate={goTo} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile/:username"
+                element={
+                  <ProtectedRoute>
+                    <Profile onNavigate={goTo} />
                   </ProtectedRoute>
                 }
               />

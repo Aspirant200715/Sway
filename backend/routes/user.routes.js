@@ -1,13 +1,20 @@
-import express from "express"
-import { registerUser,LoginUser,getUser, logoutUser } from "../controllers/user.controllers.js";
+import express from "express";
+import {
+  registerUser,
+  LoginUser,
+  getUser,
+  logoutUser,
+  getUserProfile,
+} from "../controllers/user.controllers.js";
 import isAuthenticated from "../middlewares/authmiddleware.js";
 
 const userRoutes = express.Router();
 
-userRoutes.post("/register",registerUser)
-userRoutes.post("/login",LoginUser)
-userRoutes.get("/me",isAuthenticated,getUser)
-userRoutes.post("/logout",logoutUser)
-
+userRoutes.post("/register", registerUser);
+userRoutes.post("/login", LoginUser);
+userRoutes.get("/me", isAuthenticated, getUser);
+userRoutes.post("/logout", logoutUser);
+userRoutes.get("/profile/:username", isAuthenticated, getUserProfile);
+// userRoutes.post('/:id/follow',)
 
 export default userRoutes;
