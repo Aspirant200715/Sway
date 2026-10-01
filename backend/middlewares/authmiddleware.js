@@ -11,7 +11,7 @@ const isAuthenticated = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.jwt_secret);
 
     const user = await User.findById(decoded.userId);
 
@@ -27,11 +27,15 @@ const isAuthenticated = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log(error);
+    if (error.name === "TokenExpiredError") {
+      res.clearCookie("token", { httpOnly: true });
+      return res.status(401).json({
+        message: "Session expired. Please log in again.",
+      });
+    }
 
-    return res.status(401).json({
-      message: "Token invalid",
-    });
+    console.log(error);
+    return res.status(401).json({ message: "Token invalid" });
   }
 };
 

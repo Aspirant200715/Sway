@@ -1,12 +1,27 @@
 import { useEffect, useState } from "react";
 import axiosInstance from "../axiosCalls/axios";
 import { useParams } from "react-router-dom";
+import useAuth from "../context/useAuth";
 
 function Profile() {
   const { username } = useParams();
+  const { user: currentUser } = useAuth();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [editProfile, setEditProfile] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    username: "",
+    email: "",
+    bio: "",
+    phone_no: "",
+    profile_Image: "",
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -15,7 +30,15 @@ function Profile() {
 
       try {
         const response = await axiosInstance.get(`/users/profile/${username}`);
-        setUserData(response.data.data);
+        const profileData = response.data.data;
+        setUserData(profileData);
+
+        if (currentUser) {
+          const followingStatus = profileData.followers.some(
+            (follower) => follower._id === currentUser._id,
+          );
+          setIsFollowing(followingStatus);
+        }
       } catch (requestError) {
         setError(
           requestError.response?.data?.message ||
@@ -27,7 +50,83 @@ function Profile() {
     };
 
     fetchProfile();
-  }, [username]);
+  }, [username, currentUser]);
+
+  const toggleFollow = async () => {
+    if (!currentUser || !userData) return;
+    setActionLoading(true);
+    try {
+      if (isFollowing) {
+        await axiosInstance.post(`/users/${userData._id}/unfollow`);
+
+        setUserData((prev) => ({
+          ...prev,
+          followers: prev.followers.filter(
+            (follower) => follower._id !== currentUser._id,
+          ),
+        }));
+      } else {
+        await axiosInstance.post(`/users/${userData._id}/follow`);
+        setUserData((prev) => ({
+          ...prev,
+          followers: [
+            ...prev.followers,
+            {
+              _id: currentUser._id,
+              name: currentUser.name,
+              username: currentUser.username,
+            },
+          ],
+        }));
+      }
+      setIsFollowing((following) => !following);
+    } catch (requestError) {
+      console.error("Failed to update follow status", requestError);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openEditProfile = () => {
+    setFormData({
+      name: userData.name || "",
+      username: userData.username || "",
+      email: userData.email || "",
+      bio: userData.bio || "",
+      phone_no: userData.phone_no || "",
+      profile_Image: userData.profile_Image || "",
+    });
+    setSelectedImage(null);
+    setPreviewImage(userData.profile_Image || "");
+    setEditProfile(true);
+  };
+
+  const handleEditChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((previous) => ({ ...previous, [name]: value }));
+  };
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) return;
+    setSelectedImage(file);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const imageData = reader.result;
+      setPreviewImage(imageData);
+      setFormData((previous) => ({ ...previous, profile_Image: imageData }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditSubmit = (event) => {
+    event.preventDefault();
+    setUserData((previous) => ({ ...previous, ...formData }));
+    setEditProfile(false);
+  };
 
   if (loading) {
     return <ProfileState message="Loading profile..." />;
@@ -43,13 +142,16 @@ function Profile() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
+  const isOwnProfile =
+    currentUser &&
+    (currentUser._id === userData._id ||
+      currentUser.username === userData.username);
   return (
     <div className="w-full max-w-[940px] animate-rise pb-10">
       <section className="profile-hero relative overflow-hidden rounded-[30px] bg-[#17201c] px-6 py-7 text-[#f7f8f4] shadow-[0_20px_55px_rgba(23,32,28,0.16)] sm:px-10 sm:py-9">
         <div className="absolute -bottom-32 -left-20 h-72 w-72 rounded-full border-[26px] border-[#d8e2d2]/10" />
         <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full border-[28px] border-[#e4684c]/20" />
-        <div className="profile-identity relative">
+        <div className="profile-identity relative flex items-start justify-between gap-5">
           {userData.profile_Image ? (
             <img
               src={userData.profile_Image}
@@ -72,6 +174,27 @@ function Profile() {
               @{userData.username}
             </p>
           </div>
+          {isOwnProfile ? (
+            <button
+              type="button"
+              onClick={openEditProfile}
+              className="shrink-0 rounded-full border border-[#d8e2d2]/30 px-5 py-2 font-semibold text-[#f7f8f4] transition-colors hover:bg-[#26332d]"
+            >
+              Edit profile
+            </button>
+          ) : currentUser ? (
+            <button
+              onClick={toggleFollow}
+              disabled={actionLoading}
+              className={`shrink-0 rounded-full px-6 py-2 font-semibold transition-colors ${
+                isFollowing
+                  ? "bg-[#26332d] text-[#f7f8f4] hover:bg-[#33423b]"
+                  : "bg-[#e4684c] text-white hover:bg-[#bc4e38]"
+              }`}
+            >
+              {actionLoading ? "..." : isFollowing ? "Unfollow" : "Follow"}
+            </button>
+          ) : null}
         </div>
         <div className="relative mt-8 max-w-2xl">
           <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#829188]">
@@ -83,7 +206,7 @@ function Profile() {
         </div>
         <div className="profile-stats relative mt-8 gap-3 border-t border-[#d8e2d2]/15 pt-5">
           <ProfileStat label="Followers" value={userData.followers.length} />
-          <ProfileStat label="Following" value={userData.following.length} />
+          <ProfileStat label="Following" value={userData.followings.length} />
           <ProfileStat label="Posts" value={userData.posts.length} />
         </div>
       </section>
@@ -102,10 +225,116 @@ function Profile() {
       </div>
 
       <InfoSection title="Connections" className="mt-5">
-        <CollectionRow label="Followers" values={userData.followers} />
-        <CollectionRow label="Following" values={userData.following} />
+        <UserConnectionRow label="Followers" users={userData.followers} />
+        <UserConnectionRow label="Following" users={userData.followings} />
       </InfoSection>
+
+      {isOwnProfile && editProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#17201c]/70 px-4 py-6">
+          <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-[24px] bg-[#f7f8f4] p-6 shadow-[0_20px_60px_rgba(23,32,28,0.3)] sm:p-8">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e4684c]">
+                  Your profile
+                </p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-[#17201c]">
+                  Edit profile
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditProfile(false)}
+                aria-label="Close edit profile"
+                className="text-2xl leading-none text-[#829188] hover:text-[#17201c]"
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="flex items-center gap-4 rounded-2xl bg-[#e9eee7] p-4">
+                {previewImage ? (
+                  <img
+                    src={previewImage}
+                    alt="Profile preview"
+                    className="h-20 w-20 rounded-[20px] object-cover"
+                  />
+                ) : (
+                  <div className="grid h-20 w-20 place-items-center rounded-[20px] bg-[#e4684c] font-display text-2xl font-semibold text-[#17201c]">
+                    {formData.name
+                      .split(" ")
+                      .map((part) => part[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                )}
+                <label className="cursor-pointer text-sm font-semibold text-[#26332d] hover:text-[#bc4e38]">
+                  Choose profile image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  {selectedImage && (
+                    <span className="mt-1 block max-w-[200px] truncate text-xs font-normal text-[#829188]">
+                      {selectedImage.name}
+                    </span>
+                  )}
+                </label>
+              </div>
+
+              <EditField label="Name" name="name" value={formData.name} onChange={handleEditChange} />
+              <EditField label="Username" name="username" value={formData.username} onChange={handleEditChange} />
+              <EditField label="Email" name="email" type="email" value={formData.email} onChange={handleEditChange} />
+              <EditField label="Phone" name="phone_no" value={formData.phone_no} onChange={handleEditChange} />
+              <label className="block text-sm font-semibold text-[#26332d]">
+                Bio
+                <textarea
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleEditChange}
+                  rows="4"
+                  className="mt-2 w-full resize-none rounded-xl border border-[#d8e2d2] bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-[#e4684c]"
+                />
+              </label>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditProfile(false)}
+                  className="rounded-full border border-[#d8e2d2] px-5 py-2.5 text-sm font-semibold text-[#66716a] hover:bg-[#e9eee7]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[#e4684c] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#bc4e38]"
+                >
+                  Save changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function EditField({ label, name, value, onChange, type = "text" }) {
+  return (
+    <label className="block text-sm font-semibold text-[#26332d]">
+      {label}
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="mt-2 w-full rounded-xl border border-[#d8e2d2] bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-[#e4684c]"
+      />
+    </label>
   );
 }
 
@@ -176,6 +405,39 @@ function CollectionRow({ label, values = [] }) {
         </div>
       ) : (
         <p className="text-xs text-[#9aa69d]">No data yet.</p>
+      )}
+    </div>
+  );
+}
+
+function UserConnectionRow({ label, users = [] }) {
+  return (
+    <div className="border-b border-[#eef1ec] pb-3 last:border-0 last:pb-0">
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <span className="text-sm font-semibold text-[#26332d]">{label}</span>
+        <span className="text-xs text-[#9aa69d]">{users.length} total</span>
+      </div>
+      {users.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          {users.map((user) => (
+            <div
+              key={user._id}
+              className="flex items-center gap-3 rounded-lg bg-[#f0f4ed] p-2"
+            >
+              <div className="grid h-8 w-8 place-items-center rounded-full bg-[#d8e2d2] text-xs font-bold text-[#26332d]">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-[#26332d]">
+                  {user.name}
+                </span>
+                <span className="text-xs text-[#66716a]">@{user.username}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-[#9aa69d]">No connections yet.</p>
       )}
     </div>
   );

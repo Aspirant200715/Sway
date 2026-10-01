@@ -107,7 +107,10 @@ export const logoutUser = (req, res) => {
 export const getUserProfile = async (req, res) => {
   try {
     const { username } = req.params;
-    const userData = await User.findOne({ username }).select("-password");
+    const userData = await User.findOne({ username })
+      .select("-password")
+      .populate("followers", "name username profile_Image")
+      .populate("followings", "name username profile_Image");
     if (!userData) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -129,35 +132,81 @@ export const followUser = async (req, res) => {
     const currentUserid = req.user._id;
     const targetUserid = req.params.id;
     if (currentUserid.toString() === targetUserid.toString()) {
-      return res.status(400).json({ message: "You cannot follow yourself" });
+      return res.status(409).json({ message: "You cannot follow yourself" });
     }
 
-    const currentUser = await User.findById({ currentUserid });
-    const targetUser = await User.findById({ targetUserid });
+    const currentUser = await User.findById(currentUserid);
+    const targetUser = await User.findById(targetUserid);
 
     if (!currentUser || !targetUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const alreadyFollowing = targetUser.followers.some((id)=>
-    id.toString()===currentUserid.toString());
+    const alreadyFollowing = targetUser.followers.some(
+      (id) => id.toString() === currentUserid.toString(),
+    );
 
-    if(alreadyFollowing){
-      return res.status(409).json({message:"You are already following user"})
+    if (alreadyFollowing) {
+      return res
+        .status(409)
+        .json({ message: "You are already following user" });
     }
 
-    await User.findByIdAndUpdate(currentUserid,{
-      $addToSet : {followings : targetUserid}
-    })
+    await User.findByIdAndUpdate(currentUserid, {
+      $addToSet: { followings: targetUserid },
+    });
 
-    await User.findByIdAndUpdate(targetUserid,{
-      $addToSet : {followers : currentUserid}
-    })
+    await User.findByIdAndUpdate(targetUserid, {
+      $addToSet: { followers: currentUserid },
+    });
 
-
-    res.status(201).json({message:"User Followed"})
+    res.status(201).json({ message: "User Followed" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const unfollowUser = async (req, res) => {
+  try {
+    const currentUserid = req.user._id;
+    const targetUserid = req.params.id;
+    if (currentUserid.toString() === targetUserid.toString()) {
+      return res.status(409).json({ message: "You cannot unfollow yourself" });
+    }
+    const currentUser = await User.findById(currentUserid);
+    const targetUser = await User.findById(targetUserid);
+    if (!currentUser || !targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const isFollowing = targetUser.followers.some(
+      (id) => id.toString() === currentUserid.toString(),
+    );
+    if (!isFollowing) {
+      return res
+        .status(400)
+        .json({ message: "You are not following this user" });
+    }
+    await User.findByIdAndUpdate(currentUserid, {
+      $pull: { followings: targetUserid },
+    });
+    await User.findByIdAndUpdate(targetUserid, {
+      $pull: { followers: currentUserid },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const testUpload = (req,res) => {
+  try{
+    if(!req.file){
+      return res.status(409).json({message:"No file uploads yet"})
+    }
+    req.send(req.file);
+  }catch(error){
+     console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}

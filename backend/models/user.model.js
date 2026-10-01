@@ -26,9 +26,17 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
   followers: [
+    {
+      type : mongoose.Schema.Types.ObjectId,
+      ref : "User"
+    }
     /// ids to be stored
   ],
-  following: [
+  followings: [
+    {
+      type : mongoose.Schema.Types.ObjectId,
+      ref : "User"
+    }
     /// ids to be stored
   ],
   posts: [
